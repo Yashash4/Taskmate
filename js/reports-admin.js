@@ -1,0 +1,4 @@
+document.addEventListener('DOMContentLoaded',()=>{
+  const cards=document.getElementById('cards'); const overdueList=document.getElementById('overdueList');
+  auth.onAuthStateChanged(async (user)=>{ if(!user) return; const snap=await tasksCol.get(); const tasks=snap.docs.map(d=>d.data()); renderCards(cards,tasks); const today=new Date(); today.setHours(0,0,0,0); const overdue=tasks.filter(t=>t.deadline && new Date(t.deadline)<today && t.status!=='done'); overdueList.innerHTML = overdue.length ? overdue.map(t=>`<li class="task"><div class="title">${t.title}</div><div class="meta">Due ${new Date(t.deadline).toLocaleDateString()} • <span class="badge ${t.priority?('priority-'+t.priority):''}">${t.priority}</span> • ${t.assignedTo||'Unassigned'}</div></li>`).join('') : "<li class='muted'>No overdue tasks 🎉</li>"; });
+});

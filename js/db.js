@@ -1,0 +1,1 @@
+const tasksCol=db.collection('tasks'); async function getMe(){ const u=auth.currentUser; if(!u) return {email:null,role:null,uid:null}; const snap=await db.collection('users').doc(u.uid).get(); return { email:u.email, role:snap.data()?.role||'user', uid:u.uid }; }
