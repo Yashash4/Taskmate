@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>TaskMate — Users</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+  <script defer src="js/firebase-config.js"></script>
+  <script defer src="js/admin-guard.js"></script>
+  <script defer src="js/auth-guard.js"></script>
+  <script defer src="js/users-admin.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="index.html"><div class="brand-logo"></div><span class="brand-name">TaskMate</span></a>
+    <nav>
+      <a href="admin.html">Admin</a>
+      <a class="active" href="admin-users.html">Users</a>
+      <a href="admin-reports.html">Reports</a>
+      <span class="sep"></span>
+      <span id="whoami" class="muted small"></span>
+      <button id="logoutBtn" class="btn btn-ghost">Logout</button>
+    </nav>
+  </div>
+</header>
+
+<main class="container section">
+  <h1>Organization Users</h1>
+
+  <div class="card row wrap gap">
+    <input id="userSearch" class="input" placeholder="Search name or email…"/>
+    <select id="roleFilter" class="input">
+      <option value="all">All roles</option>
+      <option value="admin">Admin</option>
+      <option value="user">User</option>
+    </select>
+  </div>
+
+  <section class="card" style="margin-top:1rem; overflow:auto">
+    <table class="tm-table" style="width:100%; border-collapse:separate; border-spacing:0 .5rem;">
+      <thead>
+        <tr class="muted">
+          <th align="left">Name</th>
+          <th align="left">Email</th>
+          <th align="left">Role</th>
+          <th align="left">Joined</th>
+          <th align="left">Open</th>
+          <th align="left">Submitted</th>
+          <th align="left">Done</th>
+        </tr>
+      </thead>
+      <tbody id="userRows">
+        <tr><td colspan="7" class="muted">Loading…</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="container"><p class="muted small">This list shows members of your org.</p></div></footer>
+</body>
+</html>

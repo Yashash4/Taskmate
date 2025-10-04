@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
   const list=document.getElementById('taskList');
-  const cards=document.getElementById('adminCards');
 
   // form
   const idEl=document.getElementById('taskId');
@@ -28,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let myOrgCode=null;
 
   function genCode(){
-    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O or 1/I
+    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let s=''; for(let i=0;i<6;i++) s+=chars[Math.floor(Math.random()*chars.length)];
     return s;
   }
@@ -74,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const arr=snap.docs.map(d=>({id:d.id,...d.data()}))
       .map(t=>({...t, createdAt:safeDate(t.createdAt), updatedAt:safeDate(t.updatedAt), deadline:safeDate(t.deadline)}))
       .sort((a,b)=>((b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0))||a.title.localeCompare(b.title));
-    renderCards(cards,arr); paintList(arr);
+    paintList(arr);
   }
 
   function paintList(items){
