@@ -28,21 +28,16 @@
 
 <main class="container section">
   <div class="auth-shell">
-    <!-- Left: hero -->
+    <!-- Left: intro -->
     <section class="auth-hero card">
       <h1 class="auth-title">Welcome back</h1>
-      <p class="muted">
-        Track tasks, hit deadlines, and keep your team in sync.
-      </p>
-
+      <p class="muted">Track tasks, hit deadlines, and keep your team in sync.</p>
       <ul class="auth-bullets">
         <li>Role-based access (Admin &amp; User)</li>
         <li>Submit ➜ Approve workflow</li>
         <li>Reports &amp; overdue highlights</li>
       </ul>
-
-      <p class="muted small">Tip: first register, then make yourself admin in Firestore
-      (<code>users/{uid}</code> → <code>role: "admin"</code>).</p>
+      <p class="muted small">Tip: admins create an invite code on their dashboard; users sign up with that code.</p>
     </section>
 
     <!-- Right: auth card with tabs -->
@@ -90,9 +85,21 @@
           </div>
         </label>
 
+        <label class="span-2">I am
+          <select id="signupRole">
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+          </select>
+        </label>
+
+        <label id="orgCodeWrap" class="span-2">Organization Code
+          <input type="text" id="signupOrgCode" placeholder="6-char code from your admin" />
+        </label>
+
         <button class="btn span-2" type="submit" id="signupBtn">Sign up</button>
         <p class="muted small span-2">
-          New accounts start as <b>user</b>. Promote to <b>admin</b> in Firestore.
+          Admins: create an invite code on your dashboard after login.<br/>
+          Users: enter the code you received from your admin.
         </p>
       </form>
     </section>
@@ -100,11 +107,7 @@
 </main>
 
 <footer class="site-footer">
-  <div class="container">
-    <p class="muted small">
-      Email/Password login. Phone OTP is optional (can be added later).
-    </p>
-  </div>
+  <div class="container"><p class="muted small">Email/Password login. OTP can be added later.</p></div>
 </footer>
 </body>
 </html>

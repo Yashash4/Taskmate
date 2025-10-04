@@ -1,1 +1,43 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>TaskMate — Admin Reports</title><link rel="stylesheet" href="styles.css"/><script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script><script defer src="js/firebase-config.js"></script><script defer src="js/auth-guard.js"></script><script defer src="js/db.js"></script><script defer src="js/ui.js"></script><script defer src="js/reports-admin.js"></script></head><body><header class="site-header"><div class="container header-inner"><a class="brand" href="index.html"><div class="brand-logo"></div><span class="brand-name">TaskMate</span></a><nav class="nav"><a href="admin.html">Admin</a><a class="active" href="admin-reports.html">Reports</a><span class="sep"></span><span id="whoami" class="muted small"></span><button id="logoutBtn" class="btn btn-ghost">Logout</button></nav></div></header><main class="container section"><h1>Admin Reports</h1><div id="cards" class="grid-4 cards"></div><section class="card"><h3>Overdue Tasks</h3><ul id="overdueList" class="task-list"></ul></section></main><footer class="site-footer"><div class="container row between wrap"><p class="muted small">Admins see global metrics.</p></div></footer></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>TaskMate — Admin Reports</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+  <script defer src="js/firebase-config.js"></script>
+  <script defer src="js/auth-guard.js"></script>
+  <script defer src="js/db.js"></script>
+  <script defer src="js/ui.js"></script>
+  <script defer src="js/reports-admin.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="index.html"><div class="brand-logo"></div><span class="brand-name">TaskMate</span></a>
+    <nav>
+      <a href="admin.html">Admin</a>
+      <a class="active" href="admin-reports.html">Reports</a>
+      <span class="sep"></span>
+      <span id="whoami" class="muted small"></span>
+      <button id="logoutBtn" class="btn btn-ghost">Logout</button>
+    </nav>
+  </div>
+</header>
+
+<main class="container section">
+  <h1>Admin Reports</h1>
+  <div id="cards" class="grid-4 cards" style="margin-bottom:1rem"></div>
+
+  <section class="card">
+    <h3>Overdue Tasks</h3>
+    <ul id="overdueList" class="task-list"></ul>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="container"><p class="muted small">Admins see global metrics for their org.</p></div></footer>
+</body>
+</html>

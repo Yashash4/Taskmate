@@ -15,18 +15,21 @@ body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-s
 .brand{display:flex;align-items:center;gap:.6rem;color:var(--text);text-decoration:none;font-weight:700}
 .brand-logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(120deg,#46c2ff,#2ed1b8)}
 .brand-name{letter-spacing:.3px}
+nav a{color:var(--muted);text-decoration:none;margin-right:1rem}
+nav a.active, nav a:hover{color:var(--text)}
+nav .sep{margin:0 .5rem;border-left:1px solid var(--border);padding-left:.75rem}
 
 /* Typography & helpers */
 .muted{color:var(--muted)} .small{font-size:.9rem} .big{font-size:2rem;font-weight:800}
 .row{display:flex;gap:.6rem;align-items:center}.wrap{flex-wrap:wrap}.gap{gap:.6rem}
 
-/* Layouts */
-.grid-2{display:grid;grid-template-columns:1.3fr 1fr;gap:1rem}
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
-
 /* Cards */
 .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:1rem}
 .cards .card{min-height:120px}
+
+/* Layouts */
+.grid-2{display:grid;grid-template-columns:1.3fr 1fr;gap:1rem}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
 
 /* Inputs & buttons */
 input,select,textarea,button{font:inherit}

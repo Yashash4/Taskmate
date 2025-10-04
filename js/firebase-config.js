@@ -1,13 +1,12 @@
-// Firebase compat SDK (matches the script tags in your HTML)
+// Firebase compat SDK config (no imports here)
 const firebaseConfig = {
-  apiKey: "AIzaSyAd8oMQ77jFm3QsVEeNzI68E7H_D4YhHLI",
-  authDomain: "taskmate-7b1db.firebaseapp.com",
-  projectId: "taskmate-7b1db",
-  storageBucket: "taskmate-7b1db.appspot.com",
-  messagingSenderId: "63597107829",
-  appId: "1:63597107829:web:f0ed0fb53ed6736822b63c"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "taskmate-XXXX.firebaseapp.com",
+  projectId: "taskmate-XXXX",
+  storageBucket: "taskmate-XXXX.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
-
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();

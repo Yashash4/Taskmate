@@ -46,7 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!snap.exists) {
       await uref.set({ name: user.email.split('@')[0], email: user.email, role: 'user', createdAt: new Date() });
     }
-    const role = (await uref.get()).data().role || 'user';
+    const data = (await uref.get()).data();
+    const role = data.role || 'user';
     location.href = role === 'admin' ? 'admin.html' : 'user.html';
   });
 
@@ -75,7 +76,14 @@ document.addEventListener('DOMContentLoaded', () => {
     catch (err) { alert(err.message); }
   });
 
-  // Signup
+  // Signup (multi-tenant)
+  const roleSel = document.getElementById('signupRole');
+  const orgWrap = document.getElementById('orgCodeWrap');
+  const orgInp  = document.getElementById('signupOrgCode');
+  const syncOrgVisibility = () => { orgWrap.style.display = roleSel.value === 'user' ? '' : 'none'; };
+  roleSel?.addEventListener('change', syncOrgVisibility);
+  syncOrgVisibility();
+
   signupForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     showError(signupForm, null);
@@ -85,8 +93,19 @@ document.addEventListener('DOMContentLoaded', () => {
       const name = document.getElementById('signupName').value.trim();
       const email = document.getElementById('signupEmail').value.trim();
       const pwd   = document.getElementById('signupPassword').value;
-      const cred  = await auth.createUserWithEmailAndPassword(email, pwd);
-      await db.collection('users').doc(cred.user.uid).set({ name, email, role: 'user', createdAt: new Date() });
+      const role  = roleSel.value;
+      let orgCode = orgInp.value.trim().toUpperCase();
+
+      if (role === 'user') {
+        if (!orgCode) { showError(signupForm, 'Organization code is required for users.'); setLoading(btn, false, 'Sign up'); return; }
+        const org = await db.collection('orgs').doc(orgCode).get();
+        if (!org.exists) { showError(signupForm, 'Invalid organization code. Ask your admin.'); setLoading(btn, false, 'Sign up'); return; }
+      } else {
+        orgCode = null; // admin creates org later
+      }
+
+      const cred = await auth.createUserWithEmailAndPassword(email, pwd);
+      await db.collection('users').doc(cred.user.uid).set({ name, email, role, orgCode, createdAt: new Date() });
       // redirect handled by onAuthStateChanged
     } catch (err) {
       showError(signupForm, err.message);
