@@ -54,11 +54,11 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Load users in my org
+    // Users in my org
     const uSnap = await db.collection('users').where('orgCode','==',orgCode).get();
     users = uSnap.docs.map(d => ({ id:d.id, ...d.data() }));
 
-    // Load tasks for counts (one query)
+    // Tasks for counts (one query)
     const tSnap = await db.collection('tasks').where('orgCode','==',orgCode).get();
     countsByEmail = {};
     tSnap.docs.forEach(doc => {

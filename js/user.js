@@ -5,14 +5,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const fPriEl=document.getElementById('filterPriority');
   const fStatEl=document.getElementById('filterStatus');
 
-  let unsub=null, myOrgCode=null;
+  let unsub=null, myOrgCode=null, myEmail=null, myName=null;
 
   function safeDate(d){ if(!d) return null; if(d.toDate) return d.toDate(); return new Date(d); }
 
   auth.onAuthStateChanged(async (user)=>{
     if(!user) return;
+    myEmail = user.email || '';
     const me=await db.collection('users').doc(user.uid).get();
     myOrgCode=me.data()?.orgCode || null;
+    myName = me.data()?.name || (myEmail ? myEmail.split('@')[0] : 'Me');
+
     if(!myOrgCode){
       alert('You are not in an organization yet. Ask your admin for the invite code and sign up again.');
       location.href='index.html'; return;
@@ -20,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(unsub) unsub();
     unsub=db.collection('tasks')
       .where('orgCode','==',myOrgCode)
-      .where('assignedTo','==', user.email)
+      .where('assignedTo','==', myEmail)
       .onSnapshot(snap=>render(snap), err=>alert(err.message));
   });
 
@@ -28,7 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const arr=snap.docs.map(d=>({id:d.id,...d.data()}))
       .map(t=>({...t,createdAt:safeDate(t.createdAt),updatedAt:safeDate(t.updatedAt),deadline:safeDate(t.deadline)}))
       .sort((a,b)=>((b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0))||a.title.localeCompare(b.title));
-    renderCards(cards,arr); paintList(arr);
+    renderCards(cards,arr);
+    paintList(arr);
   }
 
   function paintList(items){
@@ -48,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="stack">
           <div class="title">${t.title}</div>
           <div class="meta">
-            ${dueStr} • <span class="badge ${t.priority?('priority-'+t.priority):''}">${t.priority||'—'}</span> • ${t.assignedTo||'Unassigned'}
+            ${dueStr} • <span class="badge ${t.priority?('priority-'+t.priority):''}">${t.priority||'—'}</span> • ${t.assignedToName || myName}
             ${t.deadline && !isDone ? badgeFor(t.deadline,false):''}
             ${t.status==='open' ? '<span class="badge status-open">open</span>':''}
             ${t.status==='submitted' ? '<span class="badge status-submitted">submitted</span>':''}

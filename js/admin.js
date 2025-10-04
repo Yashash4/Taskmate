@@ -1,35 +1,56 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const list=document.getElementById('taskList');
+  const list = document.getElementById('taskList');
 
   // form
-  const idEl=document.getElementById('taskId');
-  const titleEl=document.getElementById('title');
-  const deadlineEl=document.getElementById('deadline');
-  const priorityEl=document.getElementById('priority');
-  const statusEl=document.getElementById('status');
-  const assignedToEmailEl=document.getElementById('assignedToEmail');
-  const descEl=document.getElementById('description');
-  const formTitle=document.getElementById('formTitle');
-  const form=document.getElementById('taskForm');
-  const resetBtn=document.getElementById('resetBtn');
+  const idEl = document.getElementById('taskId');
+  const titleEl = document.getElementById('title');
+  const deadlineEl = document.getElementById('deadline');
+  const priorityEl = document.getElementById('priority');
+  const statusEl = document.getElementById('status');
+  const assigneeSel = document.getElementById('assignedToSelect');
+  const descEl = document.getElementById('description');
+  const formTitle = document.getElementById('formTitle');
+  const form = document.getElementById('taskForm');
+  const resetBtn = document.getElementById('resetBtn');
 
   // filters
-  const searchEl=document.getElementById('search');
-  const fPriEl=document.getElementById('filterPriority');
-  const fStatEl=document.getElementById('filterStatus');
+  const searchEl = document.getElementById('search');
+  const fPriEl = document.getElementById('filterPriority');
+  const fStatEl = document.getElementById('filterStatus');
 
   // org UI
-  const orgInfo=document.getElementById('orgInfo');
-  const createOrgBtn=document.getElementById('createOrgBtn');
-  const copyOrgBtn=document.getElementById('copyOrgBtn');
+  const orgInfo = document.getElementById('orgInfo');
+  const createOrgBtn = document.getElementById('createOrgBtn');
+  const copyOrgBtn = document.getElementById('copyOrgBtn');
 
-  let unsub=null;
-  let myOrgCode=null;
+  let unsub = null;
+  let myOrgCode = null;
+
+  // cache of org users for dropdown and name lookup
+  let orgUsers = [];                 // [{uid, name, email, role}]
+  const userByEmail = new Map();     // email -> user
 
   function genCode(){
     const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let s=''; for(let i=0;i<6;i++) s+=chars[Math.floor(Math.random()*chars.length)];
     return s;
+  }
+
+  async function loadOrgUsers() {
+    if (!myOrgCode) return;
+    const snap = await db.collection('users').where('orgCode', '==', myOrgCode).get();
+    orgUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    userByEmail.clear();
+    assigneeSel.innerHTML = `<option value="">Unassigned</option>`;
+    orgUsers
+      .sort((a,b)=> (a.name||a.email).localeCompare(b.name||b.email))
+      .forEach(u => {
+        userByEmail.set(u.email, u);
+        const opt = document.createElement('option');
+        opt.value = u.email;
+        opt.textContent = u.name || u.email;
+        assigneeSel.appendChild(opt);
+      });
   }
 
   async function setupOrgUI(){
@@ -41,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
         await db.collection('orgs').doc(code).set({code,createdBy:auth.currentUser.uid,createdAt:new Date(),active:true});
         await db.collection('users').doc(auth.currentUser.uid).update({orgCode:code});
         myOrgCode=code;
-        setupOrgUI();
+        await setupOrgUI();
         subscribe();
       };
     }else{
@@ -49,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
       copyOrgBtn.disabled=false;
       copyOrgBtn.onclick=()=>{navigator.clipboard.writeText(myOrgCode); copyOrgBtn.textContent='Copied'; setTimeout(()=>copyOrgBtn.textContent='Copy Code',1200);};
       createOrgBtn.textContent='Create New Code';
+      await loadOrgUsers();
     }
   }
 
@@ -68,6 +90,10 @@ document.addEventListener('DOMContentLoaded', () => {
     await setupOrgUI();
     subscribe();
   });
+
+  function displayAssignee(t){
+    return t.assignedToName || t.assignedTo || 'Unassigned';
+  }
 
   function render(snap){
     const arr=snap.docs.map(d=>({id:d.id,...d.data()}))
@@ -94,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="title">${t.title}</div>
           <div class="meta">
             ${dueStr} • <span class="badge ${t.priority?('priority-'+t.priority):''}">${t.priority||'—'}</span> •
-            ${t.assignedTo||'Unassigned'}
+            ${displayAssignee(t)}
             ${t.deadline && !isDone ? badgeFor(t.deadline,false):''}
             ${t.status==='open' ? '<span class="badge status-open">open</span>':''}
             ${t.status==='submitted' ? '<span class="badge status-submitted">submitted</span>':''}
@@ -117,12 +143,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const li=e.target.closest('li.task'); if(!li) return;
     const id=li.dataset.id, act=e.target.dataset.action, ref=db.collection('tasks').doc(id);
     const snap=await ref.get(); if(!snap.exists) return; const t=snap.data();
+
     if(act==='toggle'){ await ref.update({status:t.status==='done'?'open':'done',updatedAt:firebase.firestore.FieldValue.serverTimestamp()}); return; }
     if(act==='delete'){ if(confirm('Delete this task?')) await ref.delete(); return; }
     if(act==='edit'){
-      idEl.value=id; titleEl.value=t.title||''; deadlineEl.value=toDateInputValue(t.deadline);
-      priorityEl.value=t.priority||'medium'; statusEl.value=t.status||'open';
-      assignedToEmailEl.value=t.assignedTo||''; descEl.value=t.description||'';
+      idEl.value=id;
+      titleEl.value=t.title||'';
+      deadlineEl.value=toDateInputValue(t.deadline);
+      priorityEl.value=t.priority||'medium';
+      statusEl.value=t.status||'open';
+      // preselect assignee
+      assigneeSel.value = t.assignedTo || '';
+      // in case user left org, still show value
+      if(t.assignedTo && !Array.from(assigneeSel.options).some(o => o.value===t.assignedTo)){
+        const opt=document.createElement('option');
+        opt.value=t.assignedTo; opt.textContent=t.assignedToName||t.assignedTo; assigneeSel.appendChild(opt);
+        assigneeSel.value=t.assignedTo;
+      }
+      descEl.value=t.description||'';
       formTitle.textContent='Edit Task'; return;
     }
     if(act==='approve'){ await ref.update({status:'done',updatedAt:firebase.firestore.FieldValue.serverTimestamp()}); return; }
@@ -134,18 +172,23 @@ document.addEventListener('DOMContentLoaded', () => {
   form.addEventListener('submit', async (e)=>{
     e.preventDefault();
     if(!myOrgCode){ alert('Create an organization code first.'); return; }
-    const payload={
-      title:titleEl.value.trim(),
-      description:(descEl.value||'').trim(),
-      priority:priorityEl.value,
-      status:statusEl.value,
-      assignedTo:assignedToEmailEl.value.trim(),
+
+    const email = assigneeSel.value || '';
+    const user  = userByEmail.get(email);
+    const payload = {
+      title: titleEl.value.trim(),
+      description: (descEl.value||'').trim(),
+      priority: priorityEl.value,
+      status: statusEl.value,
+      assignedTo: email,
+      assignedToName: user ? (user.name || user.email) : '',
       orgCode: myOrgCode,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     const d=deadlineEl.value.trim(); if(d) payload.deadline=new Date(d).toISOString();
     const id=idEl.value;
+
     try{
       if(id){ await db.collection('tasks').doc(id).update(payload); }
       else { await db.collection('tasks').add(payload); }
