@@ -1,1 +1,110 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>TaskMate — Login</title><link rel="stylesheet" href="styles.css"/><script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script><script defer src="js/firebase-config.js"></script><script defer src="js/auth.js"></script></head><body><header class="site-header"><div class="container header-inner"><a class="brand" href="#"><div class="brand-logo"></div><span class="brand-name">TaskMate</span></a></div></header><main class="container section"><div class="grid-2 gap"><section class="card"><h2>Login</h2><form id="loginForm" class="grid"><label>Email<input type="email" id="loginEmail" required placeholder="you@example.com"/></label><label>Password<input type="password" id="loginPassword" required placeholder="••••••••"/></label><button class="btn span-2" type="submit">Login</button><button class="btn btn-ghost span-2" id="resetPwd" type="button">Forgot password?</button></form></section><section class="card"><h2>Create Account</h2><form id="signupForm" class="grid"><label>Name<input type="text" id="signupName" required placeholder="Your name"/></label><label>Email<input type="email" id="signupEmail" required placeholder="you@example.com"/></label><label>Password<input type="password" id="signupPassword" required placeholder="min 6 chars"/></label><button class="btn span-2" type="submit">Sign up</button><p class="muted small">New accounts default to role <b>user</b>. Promote to <b>admin</b> in Firestore (users/{uid}).</p></form></section></div></main><footer class="site-footer"><div class="container row between wrap"><p class="muted small">Email/Password login. Phone OTP is optional; see README.</p></div></footer></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TaskMate — Sign in</title>
+
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Firebase (compat SDKs) -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+
+  <!-- Your config + auth logic -->
+  <script defer src="js/firebase-config.js"></script>
+  <script defer src="js/auth.js"></script>
+</head>
+<body class="auth-body">
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="#">
+      <div class="brand-logo"></div>
+      <span class="brand-name">TaskMate</span>
+    </a>
+  </div>
+</header>
+
+<main class="container section">
+  <div class="auth-shell">
+    <!-- Left: hero -->
+    <section class="auth-hero card">
+      <h1 class="auth-title">Welcome back</h1>
+      <p class="muted">
+        Track tasks, hit deadlines, and keep your team in sync.
+      </p>
+
+      <ul class="auth-bullets">
+        <li>Role-based access (Admin & User)</li>
+        <li>Submit ➜ Approve workflow</li>
+        <li>Reports & overdue highlights</li>
+      </ul>
+
+      <p class="muted small">Tip: first register, then make yourself admin in Firestore
+      (<code>users/{uid}</code> → <code>role: "admin"</code>).</p>
+    </section>
+
+    <!-- Right: auth card with tabs -->
+    <section class="auth-card card">
+      <nav class="tabs">
+        <button class="tab active" data-tab="login">Login</button>
+        <button class="tab" data-tab="signup">Create Account</button>
+      </nav>
+
+      <!-- LOGIN -->
+      <form id="loginForm" data-panel="login" class="auth-form grid">
+        <div class="form-error" hidden></div>
+
+        <label>Email
+          <input type="email" id="loginEmail" placeholder="you@example.com" required />
+        </label>
+
+        <label>Password
+          <div class="pw-wrap">
+            <input type="password" id="loginPassword" placeholder="••••••••" required />
+            <button type="button" class="pw-toggle" aria-label="Show password">👁</button>
+          </div>
+        </label>
+
+        <button class="btn span-2" type="submit" id="loginBtn">Login</button>
+        <button class="btn btn-ghost span-2" id="resetPwd" type="button">Forgot password?</button>
+      </form>
+
+      <!-- SIGNUP -->
+      <form id="signupForm" data-panel="signup" class="auth-form grid hidden">
+        <div class="form-error" hidden></div>
+
+        <label>Name
+          <input type="text" id="signupName" placeholder="Your name" required />
+        </label>
+
+        <label>Email
+          <input type="email" id="signupEmail" placeholder="you@example.com" required />
+        </label>
+
+        <label>Password
+          <div class="pw-wrap">
+            <input type="password" id="signupPassword" placeholder="min 6 chars" required />
+            <button type="button" class="pw-toggle" aria-label="Show password">👁</button>
+          </div>
+        </label>
+
+        <button class="btn span-2" type="submit" id="signupBtn">Sign up</button>
+        <p class="muted small span-2">
+          New accounts start as <b>user</b>. Promote to <b>admin</b> in Firestore.
+        </p>
+      </form>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p class="muted small">
+      Email/Password login. Phone OTP is optional (can be added later).
+    </p>
+  </div>
+</footer>
+</body>
+</html>
