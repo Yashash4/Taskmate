@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const signupForm = document.getElementById('signupForm');
   const resetPwd   = document.getElementById('resetPwd');
 
-  // ----- Tabs -----
+  // Tabs
   const tabs = document.querySelectorAll('.tab');
   const panels = { login: loginForm, signup: signupForm };
   tabs.forEach(t => {
@@ -12,12 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
       t.classList.add('active');
       const target = t.dataset.tab;
       Object.keys(panels).forEach(k => panels[k].classList.toggle('hidden', k !== target));
-      // focus first input of that panel
       panels[target].querySelector('input')?.focus();
     });
   });
 
-  // ----- Show/Hide password -----
+  // Show/Hide password
   document.querySelectorAll('.pw-toggle').forEach(btn => {
     btn.addEventListener('click', () => {
       const input = btn.previousElementSibling;
@@ -26,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ----- Loading & errors helpers -----
+  // Helpers
   function setLoading(btn, isLoading, label) {
     if (!btn) return;
     btn.disabled = isLoading;
@@ -39,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     box.hidden = false; box.textContent = msg;
   }
 
-  // ----- Redirect when signed in -----
+  // Redirect when signed in
   auth.onAuthStateChanged(async (user) => {
     if (!user) return;
     const uref = db.collection('users').doc(user.uid);
@@ -51,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     location.href = role === 'admin' ? 'admin.html' : 'user.html';
   });
 
-  // ----- Login -----
+  // Login
   loginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     showError(loginForm, null);
@@ -68,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ----- Password reset -----
+  // Reset password
   resetPwd?.addEventListener('click', async () => {
     const email = document.getElementById('loginEmail').value.trim() || prompt('Enter your email for a reset link:');
     if (!email) return;
@@ -76,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
     catch (err) { alert(err.message); }
   });
 
-  // ----- Sign up -----
+  // Signup
   signupForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     showError(signupForm, null);
