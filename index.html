@@ -1,33 +1,145 @@
-<script type="module">
-  import { login, signup, watchAuth } from "./js/auth.js";
-  import { $ } from "./js/ui.js";
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TaskMate – Sign in</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .tabs{display:flex;gap:8px;margin-bottom:12px}
+    .tab{flex:1;text-align:center;padding:10px;border:1px solid var(--stroke);border-radius:12px;background:var(--elev);cursor:pointer}
+    .tab.active{background:var(--chip);color:var(--txt);font-weight:700}
+    .col{background:var(--panel);border:1px solid var(--stroke);border-radius:14px;padding:18px}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span> TaskMate</div>
+    <div class="nav"></div>
+  </div>
 
-  watchAuth(async (u)=>{
-    if(!u) return;
-    const { db, doc, getDoc } = await import("./js/db.js");
-    const snap = await getDoc(doc(db,'users',u.uid));
-    if(!snap.exists()) return;
-    const role = snap.data().role;
-    location.href = role === "admin" ? "admin.html" : "user.html";
-  });
+  <div class="wrap">
+    <div class="grid cols-2">
+      <!-- Left: marketing copy -->
+      <div class="col">
+        <h1 class="h1">Welcome back</h1>
+        <p>Track tasks, hit deadlines, and keep your team in sync.</p>
+        <ul>
+          <li>Role-based access (Admin &amp; User)</li>
+          <li>Submit ➜ Approve workflow</li>
+          <li>Reports &amp; overdue highlights</li>
+        </ul>
+        <p class="muted">
+          Tip: admins create an invite code on their dashboard; users sign up with that code.
+        </p>
+      </div>
 
-  $("#btn-login").onclick = async ()=>{
-    try {
-      await login($("#li-email").value.trim(), $("#li-pass").value);
-    } catch(e){ show('li-error', e.message); }
-  };
+      <!-- Right: auth card with tabs -->
+      <div class="col">
+        <div class="tabs">
+          <button class="tab active" id="tab-login">Login</button>
+          <button class="tab" id="tab-signup">Create Account</button>
+        </div>
 
-  $("#btn-signup").onclick = async ()=>{
-    try {
-      await signup({
-        name: $("#su-name").value.trim(),
-        email: $("#su-email").value.trim(),
-        pass: $("#su-pass").value,
-        code: $("#su-code").value.trim().toUpperCase()
-      });
-      location.href = "user.html";
-    } catch(e){ show('su-error', e.message); }
-  };
+        <!-- Login -->
+        <div id="panel-login">
+          <div class="toolbar">
+            <input id="li-email" class="input" placeholder="Email" autocomplete="username" />
+            <div style="display:flex;gap:8px;width:100%">
+              <input id="li-pass" class="input" type="password" placeholder="Password" autocomplete="current-password" style="flex:1" />
+              <button id="btn-login" class="btn">Login</button>
+            </div>
+          </div>
+          <div id="li-error" class="pill" style="display:none;background:#2a1420;color:#fecaca;border-color:#7f1d1d"></div>
+        </div>
 
-  function show(id,msg){ const el=document.getElementById(id); el.style.display='inline-block'; el.textContent=msg; }
-</script>
+        <!-- Signup -->
+        <div id="panel-signup" style="display:none">
+          <div class="toolbar">
+            <input id="su-name" class="input" placeholder="Your name" autocomplete="nickname" />
+            <input id="su-email" class="input" placeholder="you@example.com" autocomplete="email" />
+            <div style="display:flex;gap:8px;width:100%">
+              <input id="su-pass" class="input" type="password" placeholder="min 6 chars" autocomplete="new-password" style="flex:1" />
+            </div>
+
+            <label>I am</label>
+            <select id="su-role" class="select">
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+
+            <div id="org-row">
+              <label>Organization Code</label>
+              <input id="su-code" class="input mono" placeholder="6-char code from your admin" />
+            </div>
+
+            <button id="btn-signup" class="btn" style="width:max-content">Sign up</button>
+          </div>
+
+          <div class="kv">
+            <div>
+              <b>Admins:</b> create an invite code on your dashboard after login.<br/>
+              <b>Users:</b> enter the code you received from your admin.
+            </div>
+          </div>
+          <div id="su-error" class="pill" style="display:none;background:#2a1420;color:#fecaca;border-color:#7f1d1d"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inline module -->
+  <script type="module">
+    import "./js/firebase-config.js";
+    import { login, signup, watchAuth } from "./js/auth.js";
+    import { db, doc, getDoc } from "./js/db.js";
+
+    const $ = s => document.querySelector(s);
+    const show = (id,msg)=>{ const el=$( '#'+id ); el.style.display='inline-block'; el.textContent=msg; };
+
+    // Tabs
+    const tl = $("#tab-login"), ts = $("#tab-signup");
+    const pl = $("#panel-login"), ps = $("#panel-signup");
+    tl.onclick = ()=>{ tl.classList.add('active'); ts.classList.remove('active'); pl.style.display='block'; ps.style.display='none'; };
+    ts.onclick = ()=>{ ts.classList.add('active'); tl.classList.remove('active'); ps.style.display='block'; pl.style.display='none'; };
+
+    // Role toggle: show org code only for User
+    const roleSel = $("#su-role");
+    const orgRow = $("#org-row");
+    const syncOrgRow = ()=>{ orgRow.style.display = roleSel.value === 'user' ? 'block' : 'none'; };
+    roleSel.onchange = syncOrgRow; syncOrgRow();
+
+    // Auto-route if signed in
+    watchAuth(async (u)=>{
+      if(!u) return;
+      const snap = await getDoc(doc(db,'users',u.uid));
+      if(!snap.exists()) return;
+      const role = snap.data().role;
+      location.href = role === "admin" ? "admin.html" : "user.html";
+    });
+
+    // Login
+    $("#btn-login").onclick = async ()=>{
+      try { await login($("#li-email").value.trim(), $("#li-pass").value); }
+      catch(e){ show('li-error', e.message || String(e)); }
+    };
+
+    // Signup
+    $("#btn-signup").onclick = async ()=>{
+      try{
+        const data = {
+          name: $("#su-name").value.trim(),
+          email: $("#su-email").value.trim(),
+          pass: $("#su-pass").value,
+          requestedRole: $("#su-role").value
+        };
+        if (data.requestedRole === 'user') {
+          data.code = $("#su-code").value.trim().toUpperCase();
+        }
+        await signup(data);
+        location.href = (data.requestedRole === 'admin') ? "admin.html" : "user.html";
+      }catch(e){ show('su-error', e.message || String(e)); }
+    };
+  </script>
+</body>
+</html>

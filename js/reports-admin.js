@@ -1,6 +1,6 @@
 import { doLogout } from "./auth.js";
 import { requireAdmin } from "./admin-guard.js";
-import { db, doc, getDoc, collection, getDocs, query, orderBy, updateDoc } from "./db.js";
+import { db, doc, collection, getDocs, query, orderBy, updateDoc } from "./db.js";
 import { $, esc, pill } from "./ui.js";
 
 let orgCode = "", all=[];

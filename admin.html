@@ -1,1 +1,54 @@
-<script type="module" src="./js/admin.js"></script>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TaskMate – Admin</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span> TaskMate</div>
+    <div class="nav">
+      <a href="admin.html" class="active">Admin</a>
+      <a href="admin-users.html">Users</a>
+      <a href="admin-reports.html">Reports</a>
+      <a href="#" id="logout">Logout</a>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <h1 class="h1">Organization</h1>
+    <div class="grid cols-2">
+      <div class="card">
+        <h3>Create or view join code</h3>
+        <div class="toolbar">
+          <input id="code" class="input mono" readonly placeholder="No code yet" />
+          <button id="generate" class="btn">Generate</button>
+          <button id="copy" class="btn secondary">Copy</button>
+        </div>
+
+        <div class="toolbar" style="margin-top:10px">
+          <input id="admin-invite" class="input mono" placeholder="Set/rotate Admin Invite Code" />
+          <button id="set-admin-invite" class="btn secondary">Save Admin Code</button>
+        </div>
+        <div class="kv">
+          <div>Share the <b>Org Code</b> publicly. Share the <b>Admin Invite Code</b> privately with admins.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Quick stats</h3>
+        <div class="kv">
+          <div id="stat-users">Users: —</div>
+          <div id="stat-open">Open tasks: —</div>
+          <div id="stat-done">Done tasks: —</div>
+          <div id="stat-reports">Reports: —</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./js/admin.js"></script>
+</body>
+</html>

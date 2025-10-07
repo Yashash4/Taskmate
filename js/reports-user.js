@@ -1,6 +1,6 @@
 import { doLogout } from "./auth.js";
 import { requireProfile } from "./auth-guard.js";
-import { db, doc, getDoc, addDoc, collection, getDocs, query, where, orderBy, serverTimestamp } from "./db.js";
+import { db, addDoc, collection, getDocs, query, where, orderBy, serverTimestamp } from "./db.js";
 import { $, esc, pill } from "./ui.js";
 
 let orgCode = "", meUid = "", meName = "";
@@ -24,10 +24,14 @@ async function submitReport(){
 }
 
 async function refresh(){
-  const q = query(collection(db,'orgs',orgCode,'reports'), where('createdBy','==',meUid), orderBy('createdAt','desc'));
-  const snap = await getDocs(q);
-  $("#rows").innerHTML = snap.docs.map(d=>{
-    const r=d.data(); const dt=r.createdAt?.toDate?r.createdAt.toDate().toLocaleString():'—';
-    return `<tr class="tr"><td>${esc(r.title)}</td><td>${dt}</td><td>${pill(r.status)}</td></tr>`;
-  }).join('') || `<tr><td colspan="3">No reports yet</td></tr>`;
+  try{
+    const qy = query(collection(db,'orgs',orgCode,'reports'), where('createdBy','==',meUid), orderBy('createdAt','desc'));
+    const snap = await getDocs(qy);
+    $("#rows").innerHTML = snap.docs.map(d=>{
+      const r=d.data(); const dt=r.createdAt?.toDate?r.createdAt.toDate().toLocaleString():'—';
+      return `<tr class="tr"><td>${esc(r.title)}</td><td>${dt}</td><td>${pill(r.status)}</td></tr>`;
+    }).join('') || `<tr><td colspan="3">No reports yet</td></tr>`;
+  }catch(e){
+    $("#rows").innerHTML = `<tr><td colspan="3" style="color:#fca5a5">Failed to load: ${esc(e.message||e)}</td></tr>`;
+  }
 }

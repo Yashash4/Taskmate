@@ -1,1 +1,48 @@
-<script type="module" src="./js/users-admin.js"></script>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TaskMate – Users</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span> TaskMate</div>
+    <div class="nav">
+      <a href="admin.html">Admin</a>
+      <a href="admin-users.html" class="active">Users</a>
+      <a href="admin-reports.html">Reports</a>
+      <a href="#" id="logout">Logout</a>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <h1 class="h1">Organization Users</h1>
+    <div class="card">
+      <div class="toolbar">
+        <input id="search" class="input" placeholder="Search name or email..." />
+        <select id="roleFilter" class="select">
+          <option value="">All roles</option>
+          <option value="admin">Admin</option>
+          <option value="user">User</option>
+        </select>
+        <button id="export" class="btn secondary">Export CSV</button>
+        <button id="recount" class="btn secondary">Recompute counters</button>
+      </div>
+
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Name</th><th>Email</th><th>Role</th><th>Joined</th>
+            <th>Open</th><th>Submitted</th><th>Done</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="rows"><tr><td colspan="8">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script type="module" src="./js/users-admin.js"></script>
+</body>
+</html>

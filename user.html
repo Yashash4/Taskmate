@@ -1,1 +1,31 @@
-<script type="module" src="./js/user.js"></script>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TaskMate – My Tasks</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span> TaskMate</div>
+    <div class="nav">
+      <a href="user.html" class="active">My Tasks</a>
+      <a href="user-reports.html">Reports</a>
+      <a href="#" id="logout">Logout</a>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <h1 class="h1">Assigned to me</h1>
+    <div class="card">
+      <table class="table">
+        <thead><tr><th>Title</th><th>Due</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="4">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script type="module" src="./js/user.js"></script>
+</body>
+</html>

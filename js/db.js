@@ -8,4 +8,3 @@ export {
   db, doc, getDoc, setDoc, updateDoc, addDoc, getDocs, collection,
   query, where, orderBy, serverTimestamp
 };
-

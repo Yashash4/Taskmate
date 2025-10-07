@@ -1,6 +1,9 @@
 import { doLogout } from "./auth.js";
 import { requireAdmin } from "./admin-guard.js";
-import { db, doc, getDoc, updateDoc, collection, getDocs, query, orderBy, addDoc, serverTimestamp } from "./db.js";
+import {
+  db, doc, updateDoc, collection, getDocs, query, orderBy, addDoc,
+  serverTimestamp
+} from "./db.js";
 import { $, $$, esc, maskEmail, csvCell, download, pill } from "./ui.js";
 
 let orgCode = "", allUsers = [];
@@ -13,8 +16,8 @@ requireAdmin(async (p)=>{
 });
 
 async function fetchUsers(){
-  const q = query(collection(db,'orgs',orgCode,'users'), orderBy('joinedAt','desc'));
-  const snap = await getDocs(q);
+  const qy = query(collection(db,'orgs',orgCode,'users'), orderBy('joinedAt','desc'));
+  const snap = await getDocs(qy);
   allUsers = snap.docs.map(d=>({ id:d.id, ...d.data() }));
   render();
 }
@@ -23,10 +26,11 @@ function wireUI(){
   $("#search").oninput = render;
   $("#roleFilter").onchange = render;
   $("#export").onclick = exportCSV;
+  $("#recount").onclick = recomputeCounters;
 }
 
 function render(){
-  const term = $("#search").value.toLowerCase();
+  const term = ($("#search").value || "").toLowerCase();
   const rf = $("#roleFilter").value;
   const data = allUsers.filter(u=>{
     const okRole = !rf || u.role===rf;
@@ -43,7 +47,7 @@ function row(u){
   return `
     <tr class="tr">
       <td>${esc(u.displayName||'—')}</td>
-      <td><span class="badge">${esc(maskEmail(u.email))}</span></td>
+      <td><span class="badge">${esc(maskEmail(u.email||''))}</span></td>
       <td><span class="pill">${u.role}</span></td>
       <td>${j}</td>
       <td>${c.open}</td>
@@ -78,17 +82,17 @@ function attachHandlers(data){
       const wrap = e.currentTarget.closest('.dropdown-menu');
       const id = e.currentTarget.closest('.dropdown').querySelector('.dd').dataset.id;
       const u = data.find(x=>x.id===id); if(!u) return;
-      const title = wrap.querySelector('[data-field="title"]').value.trim();
-      const desc  = wrap.querySelector('[data-field="desc"]').value.trim();
+      const title = (wrap.querySelector('[data-field="title"]').value || "").trim();
+      const desc  = (wrap.querySelector('[data-field="desc"]').value || "").trim();
       const due   = wrap.querySelector('[data-field="due"]').value;
       if(!title) return alert('Enter title');
       await addDoc(collection(db,'orgs',orgCode,'tasks'),{
         title, description: desc, status:'open',
-        assigneeUid: u.id, assigneeName: u.displayName,
+        assigneeUid: u.id, assigneeName: u.displayName || u.email,
         createdAt: serverTimestamp(), dueAt: due?new Date(due):null,
         createdBy: u.id, createdByName: 'Admin'
       });
-      alert(`Task assigned to ${u.displayName}`);
+      alert(`Task assigned to ${u.displayName || u.email}`);
     };
   });
 
@@ -99,7 +103,7 @@ function attachHandlers(data){
       const newRole = u.role==='admin'?'user':'admin';
       await updateDoc(doc(db,'orgs',orgCode,'users',id),{ role:newRole });
       await updateDoc(doc(db,'users',id),{ role:newRole });
-      u.role=newRole; render();
+      u.role = newRole; render();
     };
   });
 
@@ -122,4 +126,26 @@ function exportCSV(){
     return [u.displayName,u.email,u.role,j,c.open,c.submitted,c.done].map(csvCell).join(',');
   });
   download('users.csv',[header.join(','),...lines].join('\n'));
+}
+
+async function recomputeCounters(){
+  try{
+    const ts = await getDocs(collection(db,'orgs',orgCode,'tasks'));
+    const agg = {};
+    ts.forEach(d=>{
+      const t = d.data(); const uid = t.assigneeUid || "_none";
+      if(!agg[uid]) agg[uid] = { open:0, submitted:0, done:0 };
+      if(t.status==='open') agg[uid].open++;
+      else if(t.status==='submitted') agg[uid].submitted++;
+      else if(t.status==='done') agg[uid].done++;
+    });
+    const writes = allUsers.map(u=>{
+      const c = agg[u.id] || { open:0, submitted:0, done:0 };
+      return updateDoc(doc(db,'orgs',orgCode,'users',u.id),{ counters: c });
+    });
+    await Promise.all(writes);
+    allUsers = allUsers.map(u=>({ ...u, counters: agg[u.id] || { open:0, submitted:0, done:0 } }));
+    render();
+    alert('Counters recomputed successfully.');
+  }catch(e){ console.error(e); alert('Recompute failed: '+e.message); }
 }

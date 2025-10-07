@@ -1,1 +1,40 @@
-<script type="module" src="./js/reports-user.js"></script>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TaskMate – Reports</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span> TaskMate</div>
+    <div class="nav">
+      <a href="user.html">My Tasks</a>
+      <a href="user-reports.html" class="active">Reports</a>
+      <a href="#" id="logout">Logout</a>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <h1 class="h1">Submit a report</h1>
+    <div class="card">
+      <div class="toolbar">
+        <input id="title" class="input" placeholder="Title" />
+        <input id="details" class="input" placeholder="Details (optional)" />
+        <button id="submit" class="btn">Submit</button>
+      </div>
+    </div>
+
+    <h2 class="h1">My reports</h2>
+    <div class="card">
+      <table class="table">
+        <thead><tr><th>Title</th><th>Created</th><th>Status</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="3">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script type="module" src="./js/reports-user.js"></script>
+</body>
+</html>
