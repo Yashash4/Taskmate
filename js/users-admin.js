@@ -1,3 +1,4 @@
+// js/users-admin.js
 import { doLogout } from "./auth.js";
 import { requireAdmin } from "./admin-guard.js";
 import {
@@ -9,17 +10,37 @@ import { $, $$, esc, maskEmail, csvCell, download, pill } from "./ui.js";
 let orgCode = "", allUsers = [];
 
 requireAdmin(async (p)=>{
-  orgCode = p.orgCode;
+  orgCode = p.orgCode || "";
   $("#logout").onclick = doLogout;
+
+  if (!orgCode) {
+    // Admin has not generated/selected an org yet
+    $("#rows").innerHTML = `<tr><td colspan="8" style="color:#fca5a5">
+      No organization selected. Go to <a href="admin.html">Admin</a> and click <b>Generate</b> to create a code.
+    </td></tr>`;
+    return;
+  }
+
   await fetchUsers();
   wireUI();
 });
 
 async function fetchUsers(){
-  const qy = query(collection(db,'orgs',orgCode,'users'), orderBy('joinedAt','desc'));
-  const snap = await getDocs(qy);
-  allUsers = snap.docs.map(d=>({ id:d.id, ...d.data() }));
-  render();
+  try{
+    const qy = query(collection(db,'orgs',orgCode,'users'), orderBy('joinedAt','desc'));
+    const snap = await getDocs(qy);
+    allUsers = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+    if (allUsers.length === 0) {
+      $("#rows").innerHTML = `<tr><td colspan="8">No users yet. Share your org code and ask teammates to sign up.</td></tr>`;
+      return;
+    }
+    render();
+  }catch(e){
+    console.error(e);
+    $("#rows").innerHTML = `<tr><td colspan="8" style="color:#fca5a5">
+      Failed to load users: ${esc(e.message||e)}
+    </td></tr>`;
+  }
 }
 
 function wireUI(){
@@ -37,7 +58,7 @@ function render(){
     const okTerm = !term || (u.displayName?.toLowerCase().includes(term) || u.email?.toLowerCase().includes(term));
     return okRole && okTerm;
   });
-  $("#rows").innerHTML = data.map(row).join('') || `<tr><td colspan="8">No users found.</td></tr>`;
+  $("#rows").innerHTML = data.map(row).join('') || `<tr><td colspan="8">No users match your filter.</td></tr>`;
   attachHandlers(data);
 }
 
@@ -90,7 +111,7 @@ function attachHandlers(data){
         title, description: desc, status:'open',
         assigneeUid: u.id, assigneeName: u.displayName || u.email,
         createdAt: serverTimestamp(), dueAt: due?new Date(due):null,
-        createdBy: u.id, createdByName: 'Admin'
+        createdBy: 'admin', createdByUid: u.id
       });
       alert(`Task assigned to ${u.displayName || u.email}`);
     };
