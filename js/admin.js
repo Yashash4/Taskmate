@@ -8,102 +8,159 @@ import {
 import { $ } from "./ui.js";
 import { sha256Hex } from "./crypto.js";
 
+const showErr = (msg)=>{
+  const el = $("#admin-error");
+  if (!el) return alert(msg);
+  el.style.display = "inline-block";
+  el.textContent = msg;
+};
+
 let profile;
 
-requireAdmin(async (p)=>{
-  profile = p;
-  $("#logout").onclick = doLogout;
+// Bind listeners after DOM is ready so clicks always hook
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("[admin] DOM ready");
 
-  // If admin already has an org, show it and ensure a membership doc exists
-  if (profile.orgCode) {
-    const orgRef = doc(db,'orgs',profile.orgCode);
-    const org = await getDoc(orgRef);
-    if (org.exists()) $("#code").value = org.data().code || profile.orgCode;
-    await ensureMembership(profile.orgCode);   // <-- make sure admin appears under org/users
-  }
+  // Defensive: still bind button handlers (they don’t require profile immediately)
+  $("#generate")?.addEventListener("click", onGenerate);
+  $("#copy")?.addEventListener("click", onCopy);
+  $("#set-admin-invite")?.addEventListener("click", onSaveAdminCode);
 
-  await loadStats();
-});
+  // Now gate the page to admins and finish boot
+  requireAdmin(async (p)=>{
+    console.log("[admin] requireAdmin OK", p);
+    try {
+      profile = p;
+      $("#logout").onclick = doLogout;
 
-// Generate a fresh org code and mirror admin into it
-$("#generate")?.addEventListener("click", async ()=>{
-  const code = randomCode();
-  const uid  = auth.currentUser.uid;
-
-  // Create org doc
-  await setDoc(doc(db,'orgs',code),{
-    code, active:true, createdAt: serverTimestamp(), createdBy: uid
+      // If admin already has an org, display it and ensure membership doc exists
+      if (profile.orgCode) {
+        const orgRef = doc(db,'orgs',profile.orgCode);
+        const org = await getDoc(orgRef);
+        if (org.exists()) $("#code").value = org.data().code || profile.orgCode;
+        await ensureMembership(profile.orgCode);
+      }
+      await loadStats();
+    } catch (e) {
+      console.error("[admin] init error", e);
+      showErr(e.message || String(e));
+    }
   });
-
-  // Remember on top-level user doc
-  await setDoc(doc(db,'users',uid), { orgCode: code }, { merge:true });
-
-  // Mirror admin into org users so they show up in the Users page
-  const me = await getDoc(doc(db,'users',uid));
-  const data = me.exists() ? me.data() : { displayName: '', email: '' };
-  await setDoc(doc(db,'orgs',code,'users',uid),{
-    displayName: data.displayName || data.email,
-    email: data.email || '',
-    role: 'admin',
-    joinedAt: serverTimestamp(),
-    counters: { open:0, submitted:0, done:0 }
-  }, { merge:true });
-
-  $("#code").value = code;
-  alert("New organization code: "+code);
-  await loadStats();
 });
 
-// Copy org code
-$("#copy")?.addEventListener("click", ()=>{
-  const el = $("#code");
-  if (!el.value) return alert("No code yet. Generate one first.");
-  el.select(); document.execCommand('copy');
-  alert("Copied: " + el.value);
-});
+async function onGenerate(){
+  try{
+    console.log("[admin] Generate clicked");
+    if (!auth.currentUser) return showErr("You must be logged in.");
 
-// Set/rotate Admin Invite Code (optional feature)
-$("#set-admin-invite")?.addEventListener("click", async ()=>{
-  const orgCode = ($("#code").value || (profile && profile.orgCode) || "").trim();
-  if (!orgCode) return alert("Org code not set yet. Generate an org code first.");
-  const raw = ($("#admin-invite").value || "").trim();
-  if (!raw) return alert("Enter a non-empty Admin Invite Code.");
-  const hash = await sha256Hex(raw);
-  await setDoc(doc(db,'orgs',orgCode), { adminSecretHash: hash }, { merge:true });
-  $("#admin-invite").value = "";
-  alert("Admin Invite Code updated.");
-});
+    const code = randomCode();
+    const uid  = auth.currentUser.uid;
 
-async function ensureMembership(orgCode){
-  const uid = auth.currentUser.uid;
-  const memberRef = doc(db,'orgs',orgCode,'users',uid);
-  const memberSnap = await getDoc(memberRef);
-  if (!memberSnap.exists()) {
+    // Create org
+    await setDoc(doc(db,'orgs',code),{
+      code, active:true, createdAt: serverTimestamp(), createdBy: uid
+    });
+
+    // Save orgCode on the admin’s user doc
+    await setDoc(doc(db,'users',uid), { orgCode: code }, { merge:true });
+
+    // Mirror into org users
     const me = await getDoc(doc(db,'users',uid));
-    const data = me.exists() ? me.data() : { displayName:'', email:'' };
-    await setDoc(memberRef, {
-      displayName: data.displayName || data.email,
-      email: data.email || '',
-      role: data.role || 'admin',
+    const data = me.exists() ? me.data() : { displayName:"", email:"" };
+    await setDoc(doc(db,'orgs',code,'users',uid),{
+      displayName: data.displayName || data.email || "Admin",
+      email: data.email || "",
+      role: "admin",
       joinedAt: serverTimestamp(),
       counters: { open:0, submitted:0, done:0 }
     }, { merge:true });
+
+    // Reflect in UI and stats
+    $("#code").value = code;
+    profile = { ...profile, orgCode: code };
+    await loadStats();
+
+    alert("New organization code: " + code);
+  }catch(e){
+    console.error("[admin] generate failed", e);
+    showErr(e.message || String(e));
+  }
+}
+
+function onCopy(){
+  const el = $("#code");
+  if (!el?.value) return showErr("No code yet. Generate one first.");
+  el.select(); document.execCommand("copy");
+  alert("Copied: " + el.value);
+}
+
+async function onSaveAdminCode(){
+  try{
+    const orgCode = ($("#code").value || (profile && profile.orgCode) || "").trim();
+    if (!orgCode) return showErr("Org code not set yet. Generate an org code first.");
+
+    const raw = ($("#admin-invite").value || "").trim();
+    if (!raw) return showErr("Enter a non-empty Admin Invite Code.");
+
+    const hash = await sha256Hex(raw);
+    await setDoc(doc(db,'orgs',orgCode), { adminSecretHash: hash }, { merge:true });
+    $("#admin-invite").value = "";
+    alert("Admin Invite Code updated.");
+  }catch(e){
+    console.error("[admin] save admin code failed", e);
+    showErr(e.message || String(e));
+  }
+}
+
+async function ensureMembership(orgCode){
+  try{
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+
+    const memberRef = doc(db,'orgs',orgCode,'users',uid);
+    const memberSnap = await getDoc(memberRef);
+    if (!memberSnap.exists()) {
+      const me = await getDoc(doc(db,'users',uid));
+      const data = me.exists() ? me.data() : { displayName:'', email:'' };
+      await setDoc(memberRef, {
+        displayName: data.displayName || data.email || "Admin",
+        email: data.email || "",
+        role: data.role || 'admin',
+        joinedAt: serverTimestamp(),
+        counters: { open:0, submitted:0, done:0 }
+      }, { merge:true });
+      console.log("[admin] membership created under org/users");
+    } else {
+      console.log("[admin] membership exists");
+    }
+  }catch(e){
+    console.error("[admin] ensureMembership failed", e);
+    showErr(e.message || String(e));
   }
 }
 
 async function loadStats(){
-  const code = $("#code").value || profile.orgCode;
-  if (!code) return;
-  const users = await getDocs(collection(db,'orgs',code,'users'));
-  $("#stat-users")?.textContent = `Users: ${users.size}`;
+  try{
+    const code = $("#code").value || (profile && profile.orgCode);
+    if (!code) { console.log("[admin] no org code yet"); return; }
 
-  const tasks = await getDocs(collection(db,'orgs',code,'tasks'));
-  let open=0, done=0; tasks.forEach(d=>{ const s=d.data().status; if(s==='done') done++; else if(s==='open') open++; });
-  $("#stat-open")?.textContent = `Open tasks: ${open}`;
-  $("#stat-done")?.textContent = `Done tasks: ${done}`;
+    const users = await getDocs(collection(db,'orgs',code,'users'));
+    $("#stat-users").textContent = `Users: ${users.size}`;
 
-  const reports = await getDocs(collection(db,'orgs',code,'reports'));
-  $("#stat-reports")?.textContent = `Reports: ${reports.size}`;
+    const tasks = await getDocs(collection(db,'orgs',code,'tasks'));
+    let open=0, done=0; tasks.forEach(d=>{
+      const s=d.data().status; if(s==='done') done++; else if(s==='open') open++;
+    });
+    $("#stat-open").textContent = `Open tasks: ${open}`;
+    $("#stat-done").textContent = `Done tasks: ${done}`;
+
+    const reports = await getDocs(collection(db,'orgs',code,'reports'));
+    $("#stat-reports").textContent = `Reports: ${reports.size}`;
+    console.log("[admin] stats loaded");
+  }catch(e){
+    console.error("[admin] loadStats failed", e);
+    showErr(e.message || String(e));
+  }
 }
 
 function randomCode(){
