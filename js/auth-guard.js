@@ -1,10 +1,17 @@
-document.addEventListener('DOMContentLoaded',()=>{
-  const who=document.getElementById('whoami'); const logout=document.getElementById('logoutBtn');
-  auth.onAuthStateChanged(async (user)=>{
-    if(!user){ location.href='index.html'; return; }
-    const role=(await db.collection('users').doc(user.uid).get()).data()?.role||'user';
-    sessionStorage.setItem('role',role); sessionStorage.setItem('email',user.email);
-    if(who) who.textContent=`${user.email} (${role})`;
+import { watchAuth } from "./auth.js";
+import { db, doc, getDoc } from "./db.js";
+
+export function requireUser(redirect="index.html"){
+  watchAuth(async (u)=>{
+    if(!u) return location.href = redirect;
   });
-  logout?.addEventListener('click', async ()=>{ await auth.signOut(); location.href='index.html'; });
-});
+}
+
+export function requireProfile(cb, redirect="index.html"){
+  watchAuth(async (u)=>{
+    if(!u) return location.href = redirect;
+    const snap = await getDoc(doc(db,'users',u.uid));
+    if(!snap.exists()) return location.href = redirect;
+    cb({ uid:u.uid, ...snap.data() });
+  });
+}

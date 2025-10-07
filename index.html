@@ -1,113 +1,33 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TaskMate — Sign in</title>
+<script type="module">
+  import { login, signup, watchAuth } from "./js/auth.js";
+  import { $ } from "./js/ui.js";
 
-  <link rel="stylesheet" href="styles.css" />
+  watchAuth(async (u)=>{
+    if(!u) return;
+    const { db, doc, getDoc } = await import("./js/db.js");
+    const snap = await getDoc(doc(db,'users',u.uid));
+    if(!snap.exists()) return;
+    const role = snap.data().role;
+    location.href = role === "admin" ? "admin.html" : "user.html";
+  });
 
-  <!-- Firebase (compat SDKs) -->
-  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+  $("#btn-login").onclick = async ()=>{
+    try {
+      await login($("#li-email").value.trim(), $("#li-pass").value);
+    } catch(e){ show('li-error', e.message); }
+  };
 
-  <!-- Your config + auth logic -->
-  <script defer src="js/firebase-config.js"></script>
-  <script defer src="js/auth.js"></script>
-</head>
-<body class="auth-body">
-<header class="site-header">
-  <div class="container header-inner">
-    <a class="brand" href="#">
-      <div class="brand-logo"></div>
-      <span class="brand-name">TaskMate</span>
-    </a>
-  </div>
-</header>
+  $("#btn-signup").onclick = async ()=>{
+    try {
+      await signup({
+        name: $("#su-name").value.trim(),
+        email: $("#su-email").value.trim(),
+        pass: $("#su-pass").value,
+        code: $("#su-code").value.trim().toUpperCase()
+      });
+      location.href = "user.html";
+    } catch(e){ show('su-error', e.message); }
+  };
 
-<main class="container section">
-  <div class="auth-shell">
-    <!-- Left: intro -->
-    <section class="auth-hero card">
-      <h1 class="auth-title">Welcome back</h1>
-      <p class="muted">Track tasks, hit deadlines, and keep your team in sync.</p>
-      <ul class="auth-bullets">
-        <li>Role-based access (Admin &amp; User)</li>
-        <li>Submit ➜ Approve workflow</li>
-        <li>Reports &amp; overdue highlights</li>
-      </ul>
-      <p class="muted small">Tip: admins create an invite code on their dashboard; users sign up with that code.</p>
-    </section>
-
-    <!-- Right: auth card with tabs -->
-    <section class="auth-card card">
-      <nav class="tabs">
-        <button class="tab active" data-tab="login">Login</button>
-        <button class="tab" data-tab="signup">Create Account</button>
-      </nav>
-
-      <!-- LOGIN -->
-      <form id="loginForm" data-panel="login" class="auth-form grid">
-        <div class="form-error" hidden></div>
-
-        <label>Email
-          <input type="email" id="loginEmail" placeholder="you@example.com" required />
-        </label>
-
-        <label>Password
-          <div class="pw-wrap">
-            <input type="password" id="loginPassword" placeholder="••••••••" required />
-            <button type="button" class="pw-toggle" aria-label="Show password">👁</button>
-          </div>
-        </label>
-
-        <button class="btn span-2" type="submit" id="loginBtn">Login</button>
-        <button class="btn btn-ghost span-2" id="resetPwd" type="button">Forgot password?</button>
-      </form>
-
-      <!-- SIGNUP -->
-      <form id="signupForm" data-panel="signup" class="auth-form grid hidden">
-        <div class="form-error" hidden></div>
-
-        <label>Name
-          <input type="text" id="signupName" placeholder="Your name" required />
-        </label>
-
-        <label>Email
-          <input type="email" id="signupEmail" placeholder="you@example.com" required />
-        </label>
-
-        <label>Password
-          <div class="pw-wrap">
-            <input type="password" id="signupPassword" placeholder="min 6 chars" required />
-            <button type="button" class="pw-toggle" aria-label="Show password">👁</button>
-          </div>
-        </label>
-
-        <label class="span-2">I am
-          <select id="signupRole">
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
-          </select>
-        </label>
-
-        <label id="orgCodeWrap" class="span-2">Organization Code
-          <input type="text" id="signupOrgCode" placeholder="6-char code from your admin" />
-        </label>
-
-        <button class="btn span-2" type="submit" id="signupBtn">Sign up</button>
-        <p class="muted small span-2">
-          Admins: create an invite code on your dashboard after login.<br/>
-          Users: enter the code you received from your admin.
-        </p>
-      </form>
-    </section>
-  </div>
-</main>
-
-<footer class="site-footer">
-  <div class="container"><p class="muted small">Email/Password login. OTP can be added later.</p></div>
-</footer>
-</body>
-</html>
+  function show(id,msg){ const el=document.getElementById(id); el.style.display='inline-block'; el.textContent=msg; }
+</script>

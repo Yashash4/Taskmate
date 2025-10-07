@@ -1,6 +1,11 @@
-const tasksCol = db.collection('tasks');
-async function getMe(){
-  const u=auth.currentUser; if(!u) return {email:null,role:null,uid:null};
-  const snap=await db.collection('users').doc(u.uid).get();
-  return { email:u.email, role:snap.data()?.role||'user', uid:u.uid, orgCode:snap.data()?.orgCode||null };
-}
+import { db } from "./firebase-config.js";
+import {
+  doc, getDoc, setDoc, updateDoc, addDoc, getDocs, collection,
+  query, where, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+export {
+  db, doc, getDoc, setDoc, updateDoc, addDoc, getDocs, collection,
+  query, where, orderBy, serverTimestamp
+};
+

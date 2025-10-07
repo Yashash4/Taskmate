@@ -1,24 +1,33 @@
-document.addEventListener('DOMContentLoaded',()=>{
-  const cards=document.getElementById('cards');
-  const overdueList=document.getElementById('overdueList');
+import { doLogout } from "./auth.js";
+import { requireProfile } from "./auth-guard.js";
+import { db, doc, getDoc, addDoc, collection, getDocs, query, where, orderBy, serverTimestamp } from "./db.js";
+import { $, esc, pill } from "./ui.js";
 
-  function asDate(d){ if(!d) return null; if(d.toDate) return d.toDate(); return new Date(d); }
+let orgCode = "", meUid = "", meName = "";
 
-  auth.onAuthStateChanged(async (user)=>{
-    if(!user) return;
-    const me=await db.collection('users').doc(user.uid).get();
-    const orgCode=me.data()?.orgCode;
-    const snap=await db.collection('tasks').where('orgCode','==',orgCode).where('assignedTo','==',user.email).get();
-    const tasks=snap.docs.map(d=>({id:d.id,...d.data()})).map(t=>({...t,deadline:asDate(t.deadline)}));
-
-    renderCards(cards,tasks);
-
-    const today=new Date(); today.setHours(0,0,0,0);
-    const overdue=tasks.filter(t=>t.deadline && t.deadline<today && t.status!=='done');
-    overdueList.innerHTML = overdue.length ? overdue.map(t=>`
-      <li class="task">
-        <div class="title">${t.title}</div>
-        <div class="meta">Due ${t.deadline.toLocaleDateString()} • <span class="badge ${t.priority?('priority-'+t.priority):''}">${t.priority}</span></div>
-      </li>`).join('') : "<li class='muted'>No overdue tasks 🎉</li>";
-  });
+requireProfile(async (p)=>{
+  orgCode = p.orgCode; meUid = p.uid; meName = p.displayName;
+  $("#logout").onclick = doLogout;
+  $("#submit").onclick = submitReport;
+  await refresh();
 });
+
+async function submitReport(){
+  const t = $("#title").value.trim(); if(!t) return alert("Enter a title");
+  const d = $("#details").value.trim();
+  await addDoc(collection(db,'orgs',orgCode,'reports'),{
+    title:t, details:d, status:'new',
+    createdAt: serverTimestamp(), createdBy: meUid, createdByName: meName
+  });
+  $("#title").value = ""; $("#details").value = "";
+  await refresh();
+}
+
+async function refresh(){
+  const q = query(collection(db,'orgs',orgCode,'reports'), where('createdBy','==',meUid), orderBy('createdAt','desc'));
+  const snap = await getDocs(q);
+  $("#rows").innerHTML = snap.docs.map(d=>{
+    const r=d.data(); const dt=r.createdAt?.toDate?r.createdAt.toDate().toLocaleString():'—';
+    return `<tr class="tr"><td>${esc(r.title)}</td><td>${dt}</td><td>${pill(r.status)}</td></tr>`;
+  }).join('') || `<tr><td colspan="3">No reports yet</td></tr>`;
+}

@@ -1,115 +1,39 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const loginForm  = document.getElementById('loginForm');
-  const signupForm = document.getElementById('signupForm');
-  const resetPwd   = document.getElementById('resetPwd');
+import { auth } from "./firebase-config.js";
+import {
+  signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  updateProfile, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { db, doc, getDoc, setDoc, serverTimestamp } from "./db.js";
 
-  // Tabs
-  const tabs = document.querySelectorAll('.tab');
-  const panels = { login: loginForm, signup: signupForm };
-  tabs.forEach(t => {
-    t.addEventListener('click', () => {
-      tabs.forEach(x => x.classList.remove('active'));
-      t.classList.add('active');
-      const target = t.dataset.tab;
-      Object.keys(panels).forEach(k => panels[k].classList.toggle('hidden', k !== target));
-      panels[target].querySelector('input')?.focus();
-    });
-  });
+export const watchAuth = (cb) => onAuthStateChanged(auth, cb);
+export const doLogout = () => signOut(auth);
 
-  // Show/Hide password
-  document.querySelectorAll('.pw-toggle').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const input = btn.previousElementSibling;
-      input.type = input.type === 'password' ? 'text' : 'password';
-      btn.textContent = input.type === 'password' ? '👁' : '🙈';
-    });
-  });
+export async function login(email, pass){
+  const { user } = await signInWithEmailAndPassword(auth, email, pass);
+  return user;
+}
 
-  // Helpers
-  function setLoading(btn, isLoading, label) {
-    if (!btn) return;
-    btn.disabled = isLoading;
-    btn.textContent = isLoading ? 'Please wait…' : label;
-  }
-  function showError(form, msg) {
-    const box = form.querySelector('.form-error');
-    if (!box) return;
-    if (!msg) { box.hidden = true; box.textContent = ''; return; }
-    box.hidden = false; box.textContent = msg;
+export async function signup({ name, email, pass, code }){
+  // verify org code exists and active
+  const orgSnap = await getDoc(doc(db,'orgs',code));
+  if(!orgSnap.exists() || orgSnap.data().active !== true) {
+    throw new Error("Invalid or inactive organization code");
   }
 
-  // Redirect when signed in
-  auth.onAuthStateChanged(async (user) => {
-    if (!user) return;
-    const uref = db.collection('users').doc(user.uid);
-    const snap = await uref.get();
-    if (!snap.exists) {
-      await uref.set({ name: user.email.split('@')[0], email: user.email, role: 'user', createdAt: new Date() });
-    }
-    const data = (await uref.get()).data();
-    const role = data.role || 'user';
-    location.href = role === 'admin' ? 'admin.html' : 'user.html';
+  const { user } = await createUserWithEmailAndPassword(auth, email, pass);
+  const displayName = name || email.split('@')[0];
+  await updateProfile(user, { displayName });
+
+  // top-level user profile
+  await setDoc(doc(db,'users',user.uid),{
+    displayName, email, role:'user', orgCode: code, joinedAt: serverTimestamp()
   });
 
-  // Login
-  loginForm?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    showError(loginForm, null);
-    const btn = document.getElementById('loginBtn');
-    setLoading(btn, true, 'Login');
-    try {
-      await auth.signInWithEmailAndPassword(
-        document.getElementById('loginEmail').value.trim(),
-        document.getElementById('loginPassword').value
-      );
-    } catch (err) {
-      showError(loginForm, err.message);
-      setLoading(btn, false, 'Login');
-    }
-  });
+  // org membership mirror
+  await setDoc(doc(db,'orgs',code,'users',user.uid),{
+    displayName, email, role:'user', joinedAt: serverTimestamp(),
+    counters: { open:0, submitted:0, done:0 }
+  }, { merge:true });
 
-  // Reset password
-  resetPwd?.addEventListener('click', async () => {
-    const email = document.getElementById('loginEmail').value.trim() || prompt('Enter your email for a reset link:');
-    if (!email) return;
-    try { await auth.sendPasswordResetEmail(email); alert('Password reset email sent.'); }
-    catch (err) { alert(err.message); }
-  });
-
-  // Signup (multi-tenant)
-  const roleSel = document.getElementById('signupRole');
-  const orgWrap = document.getElementById('orgCodeWrap');
-  const orgInp  = document.getElementById('signupOrgCode');
-  const syncOrgVisibility = () => { orgWrap.style.display = roleSel.value === 'user' ? '' : 'none'; };
-  roleSel?.addEventListener('change', syncOrgVisibility);
-  syncOrgVisibility();
-
-  signupForm?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    showError(signupForm, null);
-    const btn = document.getElementById('signupBtn');
-    setLoading(btn, true, 'Sign up');
-    try {
-      const name = document.getElementById('signupName').value.trim();
-      const email = document.getElementById('signupEmail').value.trim();
-      const pwd   = document.getElementById('signupPassword').value;
-      const role  = roleSel.value;
-      let orgCode = orgInp.value.trim().toUpperCase();
-
-      if (role === 'user') {
-        if (!orgCode) { showError(signupForm, 'Organization code is required for users.'); setLoading(btn, false, 'Sign up'); return; }
-        const org = await db.collection('orgs').doc(orgCode).get();
-        if (!org.exists) { showError(signupForm, 'Invalid organization code. Ask your admin.'); setLoading(btn, false, 'Sign up'); return; }
-      } else {
-        orgCode = null; // admin creates org later
-      }
-
-      const cred = await auth.createUserWithEmailAndPassword(email, pwd);
-      await db.collection('users').doc(cred.user.uid).set({ name, email, role, orgCode, createdAt: new Date() });
-      // redirect handled by onAuthStateChanged
-    } catch (err) {
-      showError(signupForm, err.message);
-      setLoading(btn, false, 'Sign up');
-    }
-  });
-});
+  return user;
+}
