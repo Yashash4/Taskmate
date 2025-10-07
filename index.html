@@ -3,14 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>TaskMate – Sign in</title>
+  <title>TaskMate – Welcome</title>
   <link rel="stylesheet" href="styles.css" />
-  <style>
-    .tabs{display:flex;gap:8px;margin-bottom:12px}
-    .tab{flex:1;text-align:center;padding:10px;border:1px solid var(--stroke);border-radius:12px;background:var(--elev);cursor:pointer}
-    .tab.active{background:var(--chip);color:var(--txt);font-weight:700}
-    .col{background:var(--panel);border:1px solid var(--stroke);border-radius:14px;padding:18px}
-  </style>
 </head>
 <body>
   <div class="topbar">
@@ -21,95 +15,108 @@
   <div class="wrap">
     <div class="grid cols-2">
       <!-- Left: marketing copy -->
-      <div class="col">
+      <div class="card">
         <h1 class="h1">Welcome back</h1>
         <p>Track tasks, hit deadlines, and keep your team in sync.</p>
         <ul>
-          <li>Role-based access (Admin &amp; User)</li>
-          <li>Submit ➜ Approve workflow</li>
-          <li>Reports &amp; overdue highlights</li>
+          <li><b>Role-based access (Admin & User)</b></li>
+          <li><b>Submit ➜ Approve</b> workflow</li>
+          <li><b>Reports & overdue highlights</b></li>
         </ul>
         <p class="muted">
           Tip: admins create an invite code on their dashboard; users sign up with that code.
         </p>
       </div>
 
-      <!-- Right: auth card with tabs -->
-      <div class="col">
-        <div class="tabs">
-          <button class="tab active" id="tab-login">Login</button>
-          <button class="tab" id="tab-signup">Create Account</button>
+      <!-- Right: tabbed auth card -->
+      <div class="card">
+        <div class="toolbar" style="gap:0">
+          <button id="tab-login" class="btn secondary" style="border-top-right-radius:0;border-bottom-right-radius:0;">Login</button>
+          <button id="tab-signup" class="btn" style="border-top-left-radius:0;border-bottom-left-radius:0;">Create Account</button>
         </div>
 
-        <!-- Login -->
-        <div id="panel-login">
+        <!-- LOGIN -->
+        <div id="pane-login">
           <div class="toolbar">
             <input id="li-email" class="input" placeholder="Email" autocomplete="username" />
-            <div style="display:flex;gap:8px;width:100%">
+            <div style="display:flex;gap:10px;width:100%;">
               <input id="li-pass" class="input" type="password" placeholder="Password" autocomplete="current-password" style="flex:1" />
-              <button id="btn-login" class="btn">Login</button>
+              <button id="btn-login" class="btn">Log in</button>
             </div>
+            <button id="btn-forgot" class="btn secondary" style="width:max-content">Forgot password?</button>
           </div>
           <div id="li-error" class="pill" style="display:none;background:#2a1420;color:#fecaca;border-color:#7f1d1d"></div>
         </div>
 
-        <!-- Signup -->
-        <div id="panel-signup" style="display:none">
+        <!-- SIGNUP -->
+        <div id="pane-signup" style="display:none">
           <div class="toolbar">
             <input id="su-name" class="input" placeholder="Your name" autocomplete="nickname" />
             <input id="su-email" class="input" placeholder="you@example.com" autocomplete="email" />
-            <div style="display:flex;gap:8px;width:100%">
+            <div style="display:flex;gap:10px;width:100%;">
               <input id="su-pass" class="input" type="password" placeholder="min 6 chars" autocomplete="new-password" style="flex:1" />
             </div>
 
-            <label>I am</label>
+            <label class="muted">I am</label>
             <select id="su-role" class="select">
               <option value="user">User</option>
               <option value="admin">Admin</option>
             </select>
 
-            <div id="org-row">
-              <label>Organization Code</label>
-              <input id="su-code" class="input mono" placeholder="6-char code from your admin" />
-            </div>
+            <label class="muted">Organization Code</label>
+            <input id="su-code" class="input mono" placeholder="6-char code from your admin" />
 
-            <button id="btn-signup" class="btn" style="width:max-content">Sign up</button>
+            <button id="btn-signup" class="btn">Sign up</button>
           </div>
 
           <div class="kv">
             <div>
-              <b>Admins:</b> create an invite code on your dashboard after login.<br/>
+              <b>Admins:</b> you can sign up without a code and create one on your dashboard after login.<br/>
               <b>Users:</b> enter the code you received from your admin.
             </div>
           </div>
+
           <div id="su-error" class="pill" style="display:none;background:#2a1420;color:#fecaca;border-color:#7f1d1d"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Inline module -->
+  <!-- Inline module bootstraps the page -->
   <script type="module">
     import "./js/firebase-config.js";
-    import { login, signup, watchAuth } from "./js/auth.js";
+    import { login, signup, watchAuth, resetPassword, authMessage } from "./js/auth.js";
     import { db, doc, getDoc } from "./js/db.js";
 
-    const $ = s => document.querySelector(s);
-    const show = (id,msg)=>{ const el=$( '#'+id ); el.style.display='inline-block'; el.textContent=msg; };
+    const $ = (s)=>document.querySelector(s);
+    const show = (id,msg)=>{ const el=document.getElementById(id); el.style.display='inline-block'; el.textContent=msg; };
+    const clear = (id)=>{ const el=document.getElementById(id); el.style.display='none'; el.textContent=""; };
 
     // Tabs
-    const tl = $("#tab-login"), ts = $("#tab-signup");
-    const pl = $("#panel-login"), ps = $("#panel-signup");
-    tl.onclick = ()=>{ tl.classList.add('active'); ts.classList.remove('active'); pl.style.display='block'; ps.style.display='none'; };
-    ts.onclick = ()=>{ ts.classList.add('active'); tl.classList.remove('active'); ps.style.display='block'; pl.style.display='none'; };
+    const tabLogin  = $("#tab-login");
+    const tabSignup = $("#tab-signup");
+    const paneLogin = $("#pane-login");
+    const paneSignup= $("#pane-signup");
 
-    // Role toggle: show org code only for User
-    const roleSel = $("#su-role");
-    const orgRow = $("#org-row");
-    const syncOrgRow = ()=>{ orgRow.style.display = roleSel.value === 'user' ? 'block' : 'none'; };
-    roleSel.onchange = syncOrgRow; syncOrgRow();
+    function setTab(which){
+      clear('li-error'); clear('su-error');
+      if(which==='login'){
+        paneLogin.style.display='block';
+        paneSignup.style.display='none';
+        tabLogin.classList.remove('secondary');
+        tabSignup.classList.add('secondary');
+      }else{
+        paneLogin.style.display='none';
+        paneSignup.style.display='block';
+        tabLogin.classList.add('secondary');
+        tabSignup.classList.remove('secondary');
+      }
+    }
+    tabLogin.onclick  = ()=>setTab('login');
+    tabSignup.onclick = ()=>setTab('signup');
+    setTab('login');
 
-    // Auto-route if signed in
+    // If already signed in, route to app
     watchAuth(async (u)=>{
       if(!u) return;
       const snap = await getDoc(doc(db,'users',u.uid));
@@ -120,25 +127,56 @@
 
     // Login
     $("#btn-login").onclick = async ()=>{
-      try { await login($("#li-email").value.trim(), $("#li-pass").value); }
-      catch(e){ show('li-error', e.message || String(e)); }
+      try {
+        clear('li-error');
+        await login($("#li-email").value.trim(), $("#li-pass").value);
+      } catch(e) {
+        show('li-error', authMessage(e));
+      }
     };
 
-    // Signup
-    $("#btn-signup").onclick = async ()=>{
+    // Forgot password
+    $("#btn-forgot").onclick = async ()=>{
+      const email = $("#li-email").value.trim();
+      if(!email) return show('li-error', "Enter your email first.");
       try{
-        const data = {
-          name: $("#su-name").value.trim(),
-          email: $("#su-email").value.trim(),
-          pass: $("#su-pass").value,
-          requestedRole: $("#su-role").value
-        };
-        if (data.requestedRole === 'user') {
-          data.code = $("#su-code").value.trim().toUpperCase();
+        await resetPassword(email);
+        show('li-error', "Password reset email sent. Check your inbox.");
+      }catch(e){
+        show('li-error', authMessage(e));
+      }
+    };
+
+    // Signup (generic)
+    $("#btn-signup").onclick = async ()=>{
+      try {
+        clear('su-error');
+        const requestedRole = $("#su-role").value;
+        const code = $("#su-code").value.trim().toUpperCase();
+
+        if (requestedRole === 'user' && !code) {
+          return show('su-error', 'Organization Code is required for Users.');
         }
-        await signup(data);
-        location.href = (data.requestedRole === 'admin') ? "admin.html" : "user.html";
-      }catch(e){ show('su-error', e.message || String(e)); }
+        const email = $("#su-email").value.trim();
+
+        await signup({
+          name: $("#su-name").value.trim(),
+          email,
+          pass: $("#su-pass").value,
+          code,
+          requestedRole
+        });
+        location.href = requestedRole === "admin" ? "admin.html" : "user.html";
+      } catch(e) {
+        const msg = authMessage(e);
+        show('su-error', msg);
+
+        // If email already exists, switch to Login and prefill the email
+        if ((e?.code || "").toLowerCase() === "auth/email-already-in-use") {
+          $("#li-email").value = $("#su-email").value.trim();
+          setTab('login');
+        }
+      }
     };
   </script>
 </body>
